@@ -1,4 +1,6 @@
 #include "InitState.h"
+
+#include <Windows.h>
 #include <detours.h>
 
 #include "signatures/signatures.h"
@@ -10,6 +12,8 @@
 #include <thread>
 #include <list>
 
+namespace pd2hook
+{
 struct lua_State;
 
 typedef const char * (*lua_Reader) (lua_State *L, void *ud, size_t *sz);
@@ -402,7 +406,7 @@ void* __fastcall do_game_update_new(void* thislol, int edx, int* a, int* b){
 	if (updates == 0){
 		HTTPManager::GetSingleton()->init_locks();
 	}
-	
+
 
 	if (updates > 1){
 		EventQueueM::GetSingleton()->ProcessEvents();
@@ -483,7 +487,7 @@ int __fastcall luaL_newstate_new(void* thislol, int edx, char no, char freakin, 
 	//CREATE_LUA_FUNCTION(luaF_pcall, "pcall")
 	//CREATE_LUA_FUNCTION(luaF_dofile, "dofile")
 	/*CREATE_LUA_FUNCTION(luaF_dohttpreq, "dohttpreq")
-	
+
 	CREATE_LUA_FUNCTION(luaF_unzipfile, "unzip")
 
 	*/
@@ -509,7 +513,7 @@ void InitiateStates(){
 	FuncDetour* newStateDetour = new FuncDetour((void**)&luaL_newstate, luaL_newstate_new);
 	//FuncDetour* luaCallDetour = new FuncDetour((void**)&lua_call, lua_newcall);
 	FuncDetour* luaCloseDetour = new FuncDetour((void**)&lua_close, luaF_close);
-	
+
 	new EventQueueM();
 }
 
@@ -517,4 +521,5 @@ void DestroyStates(){
 	// Okay... let's not do that.
 	// I don't want to keep this in memory, but it CRASHES THE SHIT OUT if you delete this after all is said and done.
 	// if (gbl_mConsole) delete gbl_mConsole;
+}
 }
