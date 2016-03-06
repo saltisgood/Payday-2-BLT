@@ -1,7 +1,6 @@
 #define WIN32_LEAN_AND_MEAN 1
 #include <windows.h>
 #include "InitState.h"
-#include "console/console.h"
 
 #include <memory>
 
@@ -17,7 +16,6 @@ struct DllState
 {
 	HINSTANCE hLThis = nullptr;
 	HMODULE hL = nullptr;
-	std::unique_ptr<CConsole> console;
 };
 
 struct DllStateDestroyer
