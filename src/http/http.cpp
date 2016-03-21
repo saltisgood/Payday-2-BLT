@@ -22,10 +22,19 @@ struct HTTPProgressNotification{
 	long byteProgress;
 	long byteTotal;
 };
+
+template<typename T, typename D>
+std::ostream& operator<<(std::ostream& os, const std::unique_ptr<T, D>& p)
+{
+	os << "0x" << p.get();
+	return os;
+}
 }
 
-PD2HOOK_REGISTER_EVENTQUEUE(HTTPItem)
-PD2HOOK_REGISTER_EVENTQUEUE(HTTPProgressNotification)
+using HTTPProgressNotificationPtr = std::unique_ptr<HTTPProgressNotification, DebugDeleter<HTTPProgressNotification>>;
+using HTTPItemPtr = std::unique_ptr<HTTPItem, DebugDeleter<HTTPItem>>;
+PD2HOOK_REGISTER_EVENTQUEUE(HTTPProgressNotificationPtr, HTTPProgressNotification)
+PD2HOOK_REGISTER_EVENTQUEUE(HTTPItemPtr, HTTPItem)
 
 void lock_callback(int mode, int type, const char* file, int line){
 	if (mode & CRYPTO_LOCK){
@@ -77,7 +86,9 @@ size_t write_http_data(char* ptr, size_t size, size_t nmemb, void* data){
 	return size*nmemb;
 }
 
-void run_http_progress_event(std::unique_ptr<HTTPProgressNotification> ourNotify){
+void run_http_progress_event(HTTPProgressNotificationPtr ourNotify){
+	PD2HOOK_TRACE_FUNC;
+	PD2HOOK_LOG_LOG(__FUNCTION__ << " - NotifPtr @ " << ourNotify.get() << ", ourItem @ " << ourNotify->ourItem << ", progress @ " << ourNotify->ourItem->progress);
 	HTTPItem* ourItem = ourNotify->ourItem;
 	ourItem->progress(ourItem->data, ourNotify->byteProgress, ourNotify->byteTotal);
 }
@@ -85,6 +96,7 @@ void run_http_progress_event(std::unique_ptr<HTTPProgressNotification> ourNotify
 int http_progress_call(void* clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow){
 	PD2HOOK_TRACE_FUNC;
 	HTTPItem* ourItem = (HTTPItem*)clientp;
+	PD2HOOK_LOG_LOG("HTTPItem @ " << ourItem << " with progress @ " << ourItem->progress);
 	if (!ourItem->progress) return 0;
 	if (dltotal == 0 || dlnow == 0) return 0;
 	if (dltotal == dlnow) return 0;
@@ -92,23 +104,25 @@ int http_progress_call(void* clientp, curl_off_t dltotal, curl_off_t dlnow, curl
 	ourItem->byteprogress = static_cast<long>(dlnow);
 	ourItem->bytetotal = static_cast<long>(dltotal);
 
-	std::unique_ptr<HTTPProgressNotification> notify(new HTTPProgressNotification());
+	HTTPProgressNotificationPtr notify(new HTTPProgressNotification());
 	notify->ourItem = ourItem;
 	notify->byteProgress = static_cast<long>(dlnow);
 	notify->byteTotal = static_cast<long>(dltotal);
 
-	EventQueue<HTTPProgressNotification>::GetSingleton().AddToQueue(run_http_progress_event, std::move(notify));
+	GetHTTPProgressNotificationQueue().AddToQueue(run_http_progress_event, std::move(notify));
 	return 0;
 }
 
-void run_http_event(std::unique_ptr<HTTPItem> ourItem){
+void run_http_event(HTTPItemPtr ourItem){
 	PD2HOOK_TRACE_FUNC;
+	PD2HOOK_LOG_LOG(__FUNCTION__ << " - ourItem @ " << ourItem.get());
 	ourItem->call(ourItem->data, ourItem->httpContents);
 }
 
 void launch_thread_http(HTTPItem *raw_item){
 	PD2HOOK_TRACE_FUNC;
-	std::unique_ptr<HTTPItem> item(raw_item);
+	PD2HOOK_LOG_LOG("launching thread http with HTTPItem @ " << raw_item << " with progress @ " << raw_item->progress);
+	HTTPItemPtr item(raw_item);
 	CURL *curl;
 	curl = curl_easy_init();
 	curl_easy_setopt(curl, CURLOPT_URL, item->url.c_str());
@@ -125,12 +139,12 @@ void launch_thread_http(HTTPItem *raw_item){
 	}
 
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_http_data);
-	curl_easy_setopt(curl, CURLOPT_WRITEDATA, item);
+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, item.get());
 
 	curl_easy_perform(curl);
 	curl_easy_cleanup(curl);
 
-	EventQueue<HTTPItem>::GetSingleton().AddToQueue(run_http_event, std::move(item));
+	GetHTTPItemQueue().AddToQueue(run_http_event, std::move(item));
 }
 
 void HTTPManager::LaunchHTTPRequest(std::unique_ptr<HTTPItem> callback){

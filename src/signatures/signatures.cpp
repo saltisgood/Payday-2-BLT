@@ -57,7 +57,7 @@ const char *FindPattern(const char *pattern, const char *mask)
 
 bool FindUnassignedSignaturesPredicate(const SignatureF& s)
 {
-	return s.address == nullptr;
+	return *s.address == nullptr;
 }
 
 std::vector<SignatureF> allSignatures;
@@ -70,8 +70,7 @@ SignatureSearch::SignatureSearch(const void** adress, const char* signature, con
 
 void SignatureSearch::Search(){
 	PD2HOOK_TRACE_FUNC;
-	PD2HOOK_LOG_LOG("Scanning for signatures.");
-
+	PD2HOOK_LOG_LOG("Scanning for " << allSignatures.size() << " signatures.");
 	std::for_each(allSignatures.begin(), allSignatures.end(), [](SignatureF& s) { *s.address = FindPattern(s.signature, s.mask) + s.offset; });
 
 	const auto end = allSignatures.cend();
@@ -97,10 +96,25 @@ FuncDetour::FuncDetour(void** oldF, void* newF) : oldFunction(oldF), newFunction
 	PD2HOOK_TRACE_FUNC;
 	//DetourRestoreAfterWith();
 
-	DetourTransactionBegin();
-	DetourUpdateThread(GetCurrentThread());
-	DetourAttach(oldF, newF);
-	LONG result = DetourTransactionCommit();
+	if (!oldF)
+	{
+		PD2HOOK_LOG_WARN("oldF is null");
+	}
+	else if (!*oldF)
+	{
+		PD2HOOK_LOG_WARN("*oldF is null");
+	}
+	else if (!newF)
+	{
+		PD2HOOK_LOG_WARN("newF is null");
+	}
+
+	LONG result;
+#define PD2_DETOUR_CHK(func) if((result = func) != ERROR_SUCCESS) { PD2HOOK_LOG_WARN(#func " returns " << result); }
+	PD2_DETOUR_CHK(DetourTransactionBegin())
+	PD2_DETOUR_CHK(DetourUpdateThread(GetCurrentThread()))
+	PD2_DETOUR_CHK(DetourAttach(oldF, newF))
+	PD2_DETOUR_CHK(DetourTransactionCommit())
 }
 
 FuncDetour::~FuncDetour(){
@@ -110,5 +124,6 @@ FuncDetour::~FuncDetour(){
 	DetourDetach(oldFunction, newFunction);
 	LONG result = DetourTransactionCommit();
 }
+
 
 }

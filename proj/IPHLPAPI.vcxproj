@@ -87,6 +87,7 @@
     <ClCompile Include="..\src\signatures\signatures.cpp" />
     <ClCompile Include="..\src\threading\threadqueue.cpp" />
     <ClCompile Include="..\src\util\compression.cpp" />
+    <ClCompile Include="..\src\util\Debug.cpp" />
     <ClCompile Include="..\src\util\files.cpp" />
     <ClCompile Include="..\src\util\logging.cpp" />
     <ClCompile Include="..\src\util\util.cpp" />
@@ -97,6 +98,7 @@
     <ClInclude Include="..\src\InitState.h" />
     <ClInclude Include="..\src\signatures\signatures.h" />
     <ClInclude Include="..\src\threading\queue.h" />
+    <ClInclude Include="..\src\util\Debug.h" />
     <ClInclude Include="..\src\util\util.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

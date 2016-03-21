@@ -31,8 +31,8 @@ private:
 struct ZIPFileData {
 	std::string filepath;
 	std::string decompressedData;
-	int compressedSize;
-	int uncompressedSize;
+	int compressedSize = 0;
+	int uncompressedSize = 0;
 };
 
 ByteStream::ByteStream(const std::string& path) : mainStream(path.c_str(), std::ifstream::binary) {}

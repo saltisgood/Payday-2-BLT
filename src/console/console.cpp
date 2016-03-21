@@ -26,7 +26,7 @@ std::streambuf *sb = nullptr;
 }
 static BOOL WINAPI MyConsoleCtrlHandler(DWORD dwCtrlEvent) { return dwCtrlEvent == CTRL_C_EVENT; }
 
-CConsole::CConsole() : m_OwnConsole(false) {
+CConsole::CConsole() {
 	if (!AllocConsole()) return;
 
 	SetConsoleCtrlHandler(MyConsoleCtrlHandler, TRUE);

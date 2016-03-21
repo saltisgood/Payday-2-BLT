@@ -348,6 +348,7 @@ int luaF_dohttpreq(lua_State* L){
 		reqItem->progress = progress_lua_http;
 	}
 
+	PD2HOOK_LOG_LOG("Created HTTPItem @ " << reqItem.get() << " with progress @ " << reqItem->progress);
 	HTTPManager::GetSingleton()->LaunchHTTPRequest(std::move(reqItem));
 	lua_pushinteger(L, HTTPReqIdent);
 	return 1;
@@ -474,10 +475,12 @@ void InitiateStates(){
 
 	SignatureSearch::Search();
 
-
+	PD2HOOK_DEBUG_CHECKPOINT;
 	FuncDetour* gameUpdateDetour = new FuncDetour((void**)&do_game_update, do_game_update_new);
+	PD2HOOK_DEBUG_CHECKPOINT;
 	FuncDetour* newStateDetour = new FuncDetour((void**)&luaL_newstate, luaL_newstate_new);
 	//FuncDetour* luaCallDetour = new FuncDetour((void**)&lua_call, lua_newcall);
+	PD2HOOK_DEBUG_CHECKPOINT;
 	FuncDetour* luaCloseDetour = new FuncDetour((void**)&lua_close, luaF_close);
 }
 

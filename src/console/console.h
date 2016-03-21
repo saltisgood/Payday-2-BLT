@@ -9,7 +9,7 @@
 
 class CConsole {
 	FILE m_OldStdin, m_OldStdout;
-	bool m_OwnConsole;
+	bool m_OwnConsole = false;
 public:
 	CConsole();
 	~CConsole();
